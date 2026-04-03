@@ -239,7 +239,6 @@ def load_data():
     df_cl = df_cl.dropna(subset=["#"])
     # Join monument from summary
     mon_map = df_sum[["#","Monument"]].drop_duplicates("#")
-    mon_map = df_sum[["#","Monument"]].drop_duplicates("#")
     df_cl = df_cl.merge(mon_map, on="#", how="left")
 
     # Statistics
