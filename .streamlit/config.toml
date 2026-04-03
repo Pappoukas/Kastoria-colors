@@ -1,0 +1,47 @@
+# π¨ Kastoria Β· Color Intelligence Dashboard
+
+A professional Streamlit web app that analyzes color profiles from TripAdvisor visitor photos of Kastoria's monuments.
+
+## π“ Features
+
+| Tab | Visualizations |
+|-----|---------------|
+| **Summary** | Color frequency bar chart (Top 10 overall / Top 5 per monument), Dominant colors pie chart, Monument Γ— Color heatmap |
+| **Clusters** | Brightness vs Saturation scatter plot, Color profile bubble chart, Coverage treemap |
+| **Statistics** | Channel distributions (violin plots), Mean values per monument, RGB radar chart, Descriptive stats table |
+
+## π€ Deploy to Streamlit Cloud
+
+1. **Fork / push this repo** to your GitHub account.
+2. Place `color_summary_batch.xlsx` in the **repo root**.
+3. Go to [share.streamlit.io](https://share.streamlit.io) β†’ **New app**.
+4. Select your repo, branch `main`, and main file `app.py`.
+5. Click **Deploy** β€” done!
+
+## π“ Repository Structure
+
+```
+β”β”€β”€ app.py                      β† Main Streamlit app
+β”β”€β”€ color_summary_batch.xlsx    β† Data file (add to repo root)
+β”β”€β”€ requirements.txt            β† Python dependencies
+β”β”€β”€ .streamlit/
+β”‚   β””β”€β”€ config.toml             β† Dark theme configuration
+β””β”€β”€ README.md
+```
+
+## π›  Run Locally
+
+```bash
+pip install -r requirements.txt
+streamlit run app.py
+```
+
+## π“¦ Data Format
+
+The app reads `color_summary_batch.xlsx` with three sheets:
+- **Summary** β€” 1 row per image, 5 dominant colors with hex + % + name
+- **Clusters** β€” K-means color clusters per image (R/G/B/H/S/V/L/a/b)
+- **Statistics** β€” Per-channel descriptive stats (RGB / HSV / Lab / LCH)
+
+---
+*Built with Streamlit Β· Plotly Β· Data: TripAdvisor Β· Kastoria, Greece*
