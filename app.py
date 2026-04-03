@@ -77,12 +77,14 @@ AX = dict(gridcolor="#1e2330", zerolinecolor="#1e2330", linecolor="#1e2330",
           tickfont=dict(color="#9ca3af"))
 
 def theme(fig, title="", height=420, xkw=None, ykw=None, margin=None, extra=None):
-    """Apply dark theme. margin/extra dicts are merged, never duplicate keywords."""
-    fig.update_layout(**PL_BASE,
-                      title=dict(text=title, font=_TITLE_FONT),
-                      height=height,
-                      margin=margin or _DEF_MARGIN,
-                      **(extra or {}))
+    """Apply dark theme. Builds a single merged dict — zero duplicate-kwarg risk."""
+    layout = dict(PL_BASE)                          # shallow copy of base
+    layout["title"]  = dict(text=title, font=_TITLE_FONT)
+    layout["height"] = height
+    layout["margin"] = margin if margin is not None else _DEF_MARGIN
+    if extra:
+        layout.update(extra)                        # extra always wins
+    fig.update_layout(**layout)
     fig.update_xaxes(**{**AX, **(xkw or {})})
     fig.update_yaxes(**{**AX, **(ykw or {})})
     return fig
