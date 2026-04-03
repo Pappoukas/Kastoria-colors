@@ -141,6 +141,8 @@ def melt_colors(df):
         frames.append(tmp)
     out = pd.concat(frames, ignore_index=True).dropna(subset=["Name","Pct"])
     out["Name"] = out["Name"].str.strip()
+    out["Pct"]  = pd.to_numeric(out["Pct"], errors="coerce")
+    out = out.dropna(subset=["Pct"])
     return out
 
 
@@ -359,13 +361,65 @@ with tab2:
     st.markdown('<div class="section-header">Color Coverage Treemap</div>', unsafe_allow_html=True)
 
     agg_tree = df_lf.groupby(["Monument","Name"])["Pct"].mean().reset_index()
-    fig_tree = px.treemap(agg_tree, path=["Monument","Name"], values="Pct",
-                          color="Pct",
-                          color_continuous_scale=["#0d0f14","#0f4c64","#3db8d8","#80deea"])
-    fig_tree.update_traces(textfont=dict(family="Syne, sans-serif", size=11),
-                           marker=dict(line=dict(width=1, color="#0d0f14")))
-    theme(fig_tree, title="Color Coverage · Monument → Color Name",
-          height=480, margin=dict(l=10,r=10,t=48,b=10))
+    hex_map_t = df_lf.groupby("Name")["HEX"].first().to_dict()
+
+    # Build ids/parents/values/labels manually so we can assign actual hex colors
+    # Level 0: root (hidden)
+    # Level 1: Monument
+    # Level 2: Color Name  (colored with actual HEX)
+    mon_vals  = agg_tree.groupby("Monument")["Pct"].sum().reset_index()
+    ids, labels, parents, values, colors, texts = [], [], [], [], [], []
+
+    for _, mrow in mon_vals.iterrows():
+        mon = mrow["Monument"]
+        ids.append(mon)
+        labels.append(shorten(mon))
+        parents.append("")
+        values.append(float(mrow["Pct"]))
+        colors.append("#1a2744")   # dark blue for monument parent tiles
+        texts.append(f"<b>{shorten(mon)}</b>")
+
+    for _, crow in agg_tree.iterrows():
+        mon  = crow["Monument"]
+        name = crow["Name"]
+        pct  = crow["Pct"]
+        hex_c = hex_map_t.get(name, "#555555")
+        uid  = f"{mon}|{name}"
+        ids.append(uid)
+        labels.append(name)
+        parents.append(mon)
+        values.append(float(pct))
+        colors.append(hex_c)
+        # Decide text color: dark text on light bg, white on dark
+        try:
+            r = int(hex_c[1:3], 16)
+            g = int(hex_c[3:5], 16)
+            b = int(hex_c[5:7], 16)
+            lum = (0.299*r + 0.587*g + 0.114*b)
+            tc = "#1a1a2e" if lum > 128 else "#ffffff"
+        except Exception:
+            tc = "#ffffff"
+        texts.append(f'<span style="color:{tc}"><b>{name}</b><br>{pct:.1f}%</span>')
+
+    fig_tree = go.Figure(go.Treemap(
+        ids=ids,
+        labels=labels,
+        parents=parents,
+        values=values,
+        text=texts,
+        textinfo="text",
+        marker=dict(
+            colors=colors,
+            line=dict(width=1.5, color="#0d0f14"),
+        ),
+        hovertemplate="<b>%{label}</b><br>Avg coverage: %{value:.1f}%<extra></extra>",
+        branchvalues="total",
+        maxdepth=2,
+    ))
+    theme(fig_tree, title="Color Coverage · Monument → Color (actual color per tile)",
+          height=520, margin=dict(l=10,r=10,t=52,b=10),
+          extra=dict(showlegend=False))
+    fig_tree.update_traces(textfont=dict(family="Syne, sans-serif", size=11))
     st.plotly_chart(fig_tree, use_container_width=True)
 
 
