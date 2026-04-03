@@ -68,16 +68,21 @@ PL_BASE = dict(
     paper_bgcolor="rgba(0,0,0,0)",
     plot_bgcolor="rgba(18,21,28,0.95)",
     font=dict(family="Inter, sans-serif", color="#9ca3af", size=12),
-    margin=dict(l=14, r=14, t=48, b=14),
     legend=dict(bgcolor="rgba(0,0,0,0)", font=dict(size=10)),
     coloraxis_colorbar=dict(tickfont=dict(color="#9ca3af")),
-    title_font=dict(family="Syne, sans-serif", color="#e8eaf0", size=14),
 )
+_DEF_MARGIN = dict(l=14, r=14, t=48, b=14)
+_TITLE_FONT = dict(family="Syne, sans-serif", color="#e8eaf0", size=14)
 AX = dict(gridcolor="#1e2330", zerolinecolor="#1e2330", linecolor="#1e2330",
           tickfont=dict(color="#9ca3af"))
 
-def theme(fig, title="", height=420, xkw=None, ykw=None):
-    fig.update_layout(**PL_BASE, title=title, height=height)
+def theme(fig, title="", height=420, xkw=None, ykw=None, margin=None, extra=None):
+    """Apply dark theme. margin/extra dicts are merged, never duplicate keywords."""
+    fig.update_layout(**PL_BASE,
+                      title=dict(text=title, font=_TITLE_FONT),
+                      height=height,
+                      margin=margin or _DEF_MARGIN,
+                      **(extra or {}))
     fig.update_xaxes(**{**AX, **(xkw or {})})
     fig.update_yaxes(**{**AX, **(ykw or {})})
     return fig
@@ -255,8 +260,8 @@ with tab1:
         fig_pie.add_annotation(text=f"<b>{n_img}</b><br>images",
                                x=0.5, y=0.5, showarrow=False,
                                font=dict(size=13, color="#e8eaf0", family="Syne, sans-serif"))
-        fig_pie.update_layout(**PL_BASE, title="Dominant Color Share", height=400,
-                              showlegend=False, margin=dict(l=10, r=10, t=48, b=10))
+        theme(fig_pie, title="Dominant Color Share", height=400,
+              margin=dict(l=10, r=10, t=48, b=10), extra=dict(showlegend=False))
         st.plotly_chart(fig_pie, use_container_width=True)
 
     with col_b:
@@ -357,8 +362,8 @@ with tab2:
                           color_continuous_scale=["#0d0f14","#0f4c64","#3db8d8","#80deea"])
     fig_tree.update_traces(textfont=dict(family="Syne, sans-serif", size=11),
                            marker=dict(line=dict(width=1, color="#0d0f14")))
-    fig_tree.update_layout(**PL_BASE, title="Color Coverage · Monument → Color Name",
-                           height=480, margin=dict(l=10,r=10,t=48,b=10))
+    theme(fig_tree, title="Color Coverage · Monument → Color Name",
+          height=480, margin=dict(l=10,r=10,t=48,b=10))
     st.plotly_chart(fig_tree, use_container_width=True)
 
 
@@ -421,19 +426,18 @@ with tab3:
             line=dict(color=ACCENT[i % len(ACCENT)], width=1.5),
             fill="toself", fillcolor="rgba(0,0,0,0)", opacity=0.85,
         ))
-    fig_rad.update_layout(
-        **PL_BASE,
-        polar=dict(
-            bgcolor="#12151c",
-            radialaxis=dict(visible=True, range=[0,100], gridcolor="#1e2330",
-                            tickcolor="#6b7280", tickfont=dict(size=9)),
-            angularaxis=dict(gridcolor="#1e2330", linecolor="#1e2330",
-                             tickfont=dict(size=10, color="#9ca3af")),
-        ),
-        title="Normalized Color Channels · Radar per Monument",
-        height=500, margin=dict(l=70,r=70,t=54,b=24),
-        legend=dict(font=dict(size=9), itemsizing="constant"),
-    )
+    theme(fig_rad, title="Normalized Color Channels · Radar per Monument",
+          height=500, margin=dict(l=70,r=70,t=54,b=24),
+          extra=dict(
+              polar=dict(
+                  bgcolor="#12151c",
+                  radialaxis=dict(visible=True, range=[0,100], gridcolor="#1e2330",
+                                  tickcolor="#6b7280", tickfont=dict(size=9)),
+                  angularaxis=dict(gridcolor="#1e2330", linecolor="#1e2330",
+                                   tickfont=dict(size=10, color="#9ca3af")),
+              ),
+              legend=dict(font=dict(size=9), itemsizing="constant"),
+          ))
     st.plotly_chart(fig_rad, use_container_width=True)
 
     st.markdown("---")
