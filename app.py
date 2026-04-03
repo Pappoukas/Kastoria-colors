@@ -96,34 +96,43 @@ ACCENT = ["#64b5f6","#4dd0e1","#80cbc4","#a5d6a7","#fff176",
 # ── Data ──────────────────────────────────────────────────────────────────────
 @st.cache_data
 def load_data():
-    path = "color_summary_batch.xlsx"
-    df = pd.read_excel(path, sheet_name="Summary", header=2)
+    # ── CSV settings: semicolon separator, European decimal comma ──────────
+    CSV = dict(sep=";", decimal=",", encoding="utf-8-sig")
+
+    # ── Info: photo # → Monument mapping ────────────────────────────────────
+    info = pd.read_csv("color_summary_batch_Info.csv", **CSV)
+    info.columns = ["#","URL","Filename","ID","Monument","WxH"]
+    info["#"] = pd.to_numeric(info["#"], errors="coerce")
+    info = info.dropna(subset=["#","Monument"])
+    mon_map = info[["#","Monument"]].drop_duplicates("#")
+
+    # ── Summary ──────────────────────────────────────────────────────────────
+    df = pd.read_csv("color_summary_batch_Summary.csv", **CSV)
     df.columns = [
-        "#","URL","Filename","ID","Monument","WxH",
-        "R_mean","G_mean","B_mean","H_mean","S_mean","V_mean","L_mean","C_mean",
-        "C1_hex","C1_pct","C1_name","C2_hex","C2_pct","C2_name",
-        "C3_hex","C3_pct","C3_name","C4_hex","C4_pct","C4_name",
-        "C5_hex","C5_pct","C5_name","Status",
+        "#","R_mean","G_mean","B_mean","H_mean","S_mean","V_mean","L_mean","C_mean",
+        "C1_hex","C1_pct","C1_name",
+        "C2_hex","C2_pct","C2_name",
+        "C3_hex","C3_pct","C3_name",
+        "C4_hex","C4_pct","C4_name",
+        "C5_hex","C5_pct","C5_name",
     ]
-    df = df.dropna(subset=["Monument"])
     for c in ["R_mean","G_mean","B_mean","H_mean","S_mean","V_mean","L_mean","C_mean",
               "C1_pct","C2_pct","C3_pct","C4_pct","C5_pct","#"]:
         df[c] = pd.to_numeric(df[c], errors="coerce")
-    df = df.dropna(subset=["#"])
-    mon_map = df[["#","Monument"]].drop_duplicates("#")
+    df = df.dropna(subset=["#"]).merge(mon_map, on="#", how="left")
+    df = df.dropna(subset=["Monument"])
 
-    raw = pd.read_excel(path, sheet_name="Clusters", header=0)
-    raw.columns = raw.iloc[0]
-    cl = raw.iloc[1:].reset_index(drop=True)
-    cl.columns = ["#","URL","Filename","Cluster","Pixels","Pct","HEX",
-                  "Swatch","R","G","B","H","S","V","L","a","b","Name"]
+    # ── Clusters ─────────────────────────────────────────────────────────────
+    cl = pd.read_csv("color_summary_batch_Clusters.csv", **CSV)
+    cl.columns = ["#","Cluster","Pixels","Pct","HEX","Swatch",
+                  "R","G","B","H","S","V","L","a","b","Name"]
     for c in ["#","Pixels","Pct","R","G","B","H","S","V","L","a","b"]:
         cl[c] = pd.to_numeric(cl[c], errors="coerce")
     cl = cl.dropna(subset=["#"]).merge(mon_map, on="#", how="left")
 
-    st_df = pd.read_excel(path, sheet_name="Statistics", header=2)
-    st_df.columns = ["#","URL","Filename","Space","Channel",
-                     "Mean","Median","Min","Max","Std","_1","_2","_3"]
+    # ── Statistics ───────────────────────────────────────────────────────────
+    st_df = pd.read_csv("color_summary_batch_Statistics.csv", **CSV)
+    st_df.columns = ["#","Space","Channel","Mean","Median","Min","Max","Std"]
     for c in ["#","Mean","Median","Min","Max","Std"]:
         st_df[c] = pd.to_numeric(st_df[c], errors="coerce")
     st_df = st_df.dropna(subset=["Space","Channel"]).merge(mon_map, on="#", how="left")
@@ -181,8 +190,8 @@ with st.sidebar:
         sel_mon = monuments
     st.markdown("---")
     st.markdown("### 🗃 Data File")
-    st.code("color_summary_batch.xlsx", language=None)
-    st.caption("Place in repo root → deploy via Streamlit Cloud.")
+    st.code("color_summary_batch_*.csv", language=None)
+    st.caption("Place all 4 CSVs in repo root → deploy via Streamlit Cloud.")
     st.markdown("---")
     st.markdown("""<div style="font-size:0.72rem;color:#4b5563;line-height:1.8">
     Built with <strong style="color:#4dd0e1">Streamlit</strong> · Plotly<br>
